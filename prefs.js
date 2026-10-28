@@ -34,8 +34,15 @@ export default class BetterWorkspaceThumbnailsPreferences extends ExtensionPrefe
         });
         sizeRow.add_suffix(scale);
 
+        const dragRow = new Adw.SwitchRow({
+            title: 'Drag the whole thumbnail',
+            subtitle: 'Reorder by dragging a thumbnail from anywhere on it, with no grip. Windows can no longer be dragged out of the thumbnails.',
+        });
+        settings.bind('drag-whole-thumbnail', dragRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+
         const group = new Adw.PreferencesGroup({title: 'Thumbnails'});
         group.add(sizeRow);
+        group.add(dragRow);
         const page = new Adw.PreferencesPage();
         page.add(group);
         window.add(page);

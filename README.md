@@ -29,6 +29,11 @@ way to change the order of workspaces, even though Mutter supports it
   (the current-workspace outline moves with its thumbnail). Dropping moves
   the workspace there; letting go outside the strip puts everything back.
   The spare workspace has no grip.
+- **Drag the whole thumbnail (optional, off by default):** a switch in the
+  preferences that drops the grip and lets you drag a thumbnail from anywhere
+  on it. Windows can then no longer be dragged out of the thumbnails (they
+  can still be dropped onto them from the big workspace view), and a click
+  still switches workspace.
 
 GNOME's own behavior is kept: the accent-colored outline on the current
 workspace, clicking a thumbnail to switch, and dragging windows onto
@@ -64,6 +69,11 @@ popup.
   wrapped: a reorder drag targets the thumbnail nearest the pointer and calls
   `global.workspace_manager.reorder_workspace()`; every other drag goes to
   GNOME's own code.
+- **Drag the whole thumbnail:** each thumbnail also gets an empty, reactive
+  layer over it (the cover), a second draggable with the same reorder source
+  as the grip. Shown only with `drag-whole-thumbnail` on, it takes the
+  pointer events that would reach the window previews, so their own window
+  drag never starts. A plain click still reaches the box's click gesture.
 - **Drop preview:** while dragging, the thumbnails between the dragged one
   and the target are offset by one slot with `translation_x`
   (`slotShifts()` in `logic.js`); their allocations, which GNOME owns, are
@@ -129,7 +139,10 @@ into extension lines, errors and the rest.
 Checked in the headless shell (GNOME 50.5, 1280 x 800): names and grip,
 reordering with and without Space Bar, window drag onto a thumbnail, live
 resizing, dynamic workspaces' spare, and disable/enable with tracker counts
-back to 0 and steady across overview open/close cycles.
+back to 0 and steady across overview open/close cycles. With
+`drag-whole-thumbnail`: no grip, dragging from a window preview reorders,
+a click switches workspace, and turning it off live brings back the grip and
+window drag out of a thumbnail.
 
 ## Known limitations
 

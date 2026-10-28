@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Enlarges the overview's workspace thumbnails, shows each workspace's name
 // under its thumbnail, and adds a grip on the top edge to drag a workspace to
-// a new position.
+// a new position (or, with drag-whole-thumbnail, makes the thumbnail itself
+// the thing to drag).
 //
 // Everything is done by patching GNOME's own ThumbnailsBox and
 // WorkspaceThumbnail (ui/workspaceThumbnail.js), so the live previews, the
@@ -56,6 +57,12 @@ export default class BetterWorkspaceThumbnailsExtension extends Extension {
             }
         });
         const refresh = () => this._boxes.forEach(box => this._refreshLabels(box));
+        this._tracker.connect(this._settings, 'changed::drag-whole-thumbnail', () => {
+            for (const box of this._boxes) {
+                this._showHandle(box, null);
+                this._refreshLabels(box);
+            }
+        });
         this._tracker.connect(this._wmSettings, 'changed::workspace-names', refresh);
         for (const signal of ['workspaces-reordered', 'notify::n-workspaces', 'active-workspace-changed'])
             this._tracker.connect(global.workspace_manager, signal, refresh);
@@ -82,7 +89,7 @@ export default class BetterWorkspaceThumbnailsExtension extends Extension {
                 ext._refreshLabels(this);
             });
 
-        // A drag from a grip is a reorder; every other drag (windows, apps)
+        // A drag from a grip or a cover is a reorder; every other drag (windows, apps)
         // goes to GNOME's own handling.
         this._injections.overrideMethod(ThumbnailsBox.prototype, 'handleDragOver',
             original => function (source, actor, x, y, time) {
@@ -230,13 +237,19 @@ export default class BetterWorkspaceThumbnailsExtension extends Extension {
                 pivot_point: new Graphene.Point({x: 0.5, y: 0.5}),
             }),
         });
+        // With drag-whole-thumbnail, an empty layer over the thumbnail takes
+        // its pointer events: the window previews under it can no longer be
+        // dragged out, and the layer drags the workspace instead. Clicks
+        // still reach the box's own click gesture, which switches workspace.
+        const cover = new St.Widget({reactive: true, visible: false});
         thumb.add_child(labelBin);
+        thumb.add_child(cover);
         thumb.add_child(handle);
 
         // The thumbnail clips to its own edges, but the name sits below it and
         // the grip overhangs its top; clip just the window previews instead.
         const bwt = {
-            label, labelBin, handle,
+            label, labelBin, handle, cover,
             shown: false,
             hadClip: thumb.clip_to_allocation,
             layoutId: 0,
@@ -245,7 +258,7 @@ export default class BetterWorkspaceThumbnailsExtension extends Extension {
         thumb.clip_to_allocation = false;
         thumb._viewport.clip_to_allocation = true;
 
-        handle._delegate = {
+        const delegate = {
             isWorkspaceReorder: true,
             metaWorkspace: thumb.metaWorkspace,
             getDragActor: () => {
@@ -260,11 +273,16 @@ export default class BetterWorkspaceThumbnailsExtension extends Extension {
             },
             getDragActorSource: () => thumb,
         };
-        bwt.draggable = DND.makeDraggable(handle, {dragActorOpacity: 220});
-        bwt.draggableSignals = this._connectAll(bwt.draggable, [
-            ['drag-begin', () => this._onDragBegin(thumb)],
-            ['drag-end', () => this._onDragEnd(thumb)],
-        ]);
+        handle._delegate = delegate;
+        cover._delegate = delegate;
+        bwt.draggables = [handle, cover].map(actor => {
+            const draggable = DND.makeDraggable(actor, {dragActorOpacity: 220});
+            const ids = this._connectAll(draggable, [
+                ['drag-begin', () => this._onDragBegin(thumb)],
+                ['drag-end', () => this._onDragEnd(thumb)],
+            ]);
+            return {draggable, ids};
+        });
 
         bwt.thumbSignals = this._connectAll(thumb, [
             // Placing children during the thumbnail's own allocation is not
@@ -291,7 +309,7 @@ export default class BetterWorkspaceThumbnailsExtension extends Extension {
             this._onDragEnd(thumb);
         this._tracker.remove(bwt.layoutId);
         this._disconnectAll(thumb, bwt.thumbSignals);
-        this._disconnectAll(bwt.draggable, bwt.draggableSignals);
+        bwt.draggables.forEach(({draggable, ids}) => this._disconnectAll(draggable, ids));
         delete thumb._bwt;
     }
 
@@ -305,14 +323,15 @@ export default class BetterWorkspaceThumbnailsExtension extends Extension {
         thumb.clip_to_allocation = bwt.hadClip;
         thumb._viewport.clip_to_allocation = false;
         bwt.labelBin.destroy();
+        bwt.cover.destroy();
         bwt.handle.destroy();
     }
 
-    // Places the name under the thumbnail and the grip on its top edge. Uses
-    // the allocation: the thumbnail's width and height properties report the
-    // full-size preview it is scaled down from.
+    // Places the name under the thumbnail, the cover over it and the grip on
+    // its top edge. Uses the allocation: the thumbnail's width and height
+    // properties report the full-size preview it is scaled down from.
     _layout(thumb) {
-        const {labelBin, handle} = thumb._bwt;
+        const {labelBin, handle, cover} = thumb._bwt;
         const b = bounds(thumb);
         const width = Math.round(b.width);
         const height = Math.round(b.height);
@@ -323,6 +342,8 @@ export default class BetterWorkspaceThumbnailsExtension extends Extension {
             [labelBin, 0, height + LABEL_GAP * scaleFactor, width],
             [handle, Math.round((width - handleWidth) / 2), -Math.round(handleHeight / 2), handleWidth],
         ];
+        if (cover.width !== width || cover.height !== height)
+            cover.set_size(width, height);
         // Only touch what moved: each change queues another allocation.
         for (const [actor, x, y, w] of placements) {
             if (actor.x !== x || actor.y !== y)
@@ -344,22 +365,26 @@ export default class BetterWorkspaceThumbnailsExtension extends Extension {
     }
 
     // With dynamic workspaces GNOME keeps an empty spare workspace at the end.
-    // It gets no name and no grip.
+    // It gets no name, no grip and no cover.
     _isSpare(index) {
         return Meta.prefs_get_dynamic_workspaces() &&
             index === global.workspace_manager.n_workspaces - 1;
     }
 
+    // Also shows the covers, which depend on the setting and on which
+    // workspace is the spare.
     _refreshLabels(box) {
         const names = this._wmSettings.get_strv('workspace-names');
+        const dragWhole = this._settings.get_boolean('drag-whole-thumbnail');
         const active = global.workspace_manager.get_active_workspace();
         const indices = this._workspaceIndices();
         for (const thumb of box._thumbnails) {
             const index = indices.get(thumb.metaWorkspace);
             if (!thumb._bwt || index === undefined)
                 continue;
-            const {label} = thumb._bwt;
+            const {label, cover} = thumb._bwt;
             label.text = this._isSpare(index) ? '' : workspaceLabel(names, index);
+            cover.visible = dragWhole && !this._isSpare(index);
             if (thumb.metaWorkspace === active)
                 label.add_style_class_name('bwt-label-current');
             else
@@ -387,6 +412,7 @@ export default class BetterWorkspaceThumbnailsExtension extends Extension {
                 continue;
             const index = indices.get(thumb.metaWorkspace);
             const show = thumb === active &&
+                !this._settings.get_boolean('drag-whole-thumbnail') &&
                 thumb.state === ThumbnailState.NORMAL &&
                 index !== undefined && !this._isSpare(index);
             if (show === bwt.shown)

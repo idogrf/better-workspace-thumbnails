@@ -10,6 +10,13 @@
       screen). 1.0 is GNOME's default size. With many workspaces the
       thumbnails can be held back by the screen width instead.</description>
     </key>
+    <key name="drag-whole-thumbnail" type="b">
+      <default>false</default>
+      <summary>Reorder by dragging the whole thumbnail</summary>
+      <description>Drag a thumbnail from anywhere on it to move its
+      workspace, instead of by the grip on its top edge. Windows can then
+      no longer be dragged out of the thumbnails.</description>
+    </key>
     <key name="debug-stats" type="b">
       <default>false</default>
       <summary>Log debug statistics (hidden, not in prefs)</summary>
