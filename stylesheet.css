@@ -1,0 +1,41 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+
+/* Room under the thumbnails for their names. */
+.workspace-thumbnails.bwt-box {
+    padding-bottom: 30px;
+}
+
+.bwt-label {
+    font-size: 10pt;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.bwt-label.bwt-label-current {
+    color: #ffffff;
+    font-weight: bold;
+}
+
+/* The grip on the top edge of the pointed-at thumbnail. */
+.bwt-handle {
+    width: 40px;
+    height: 16px;
+    border-radius: 8px;
+    background-color: rgba(40, 40, 46, 0.95);
+    border: 1px solid -st-accent-color;
+    color: -st-accent-color;
+}
+
+.bwt-handle:hover {
+    background-color: -st-accent-color;
+    color: #ffffff;
+}
+
+.bwt-handle-icon {
+    icon-size: 12px;
+}
+
+/* The thumbnail that follows the pointer during a drag. */
+.bwt-drag-actor {
+    background-color: #46464e;
+    border-radius: 4px;
+}

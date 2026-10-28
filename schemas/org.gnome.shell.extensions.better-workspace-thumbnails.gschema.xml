@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.better-workspace-thumbnails"
+          path="/org/gnome/shell/extensions/better-workspace-thumbnails/">
+    <key name="thumbnail-scale" type="d">
+      <default>2.0</default>
+      <range min="1.0" max="4.0"/>
+      <summary>Size of the workspace thumbnails</summary>
+      <description>Multiplies GNOME's maximum thumbnail size (5% of the
+      screen). 1.0 is GNOME's default size. With many workspaces the
+      thumbnails can be held back by the screen width instead.</description>
+    </key>
+    <key name="debug-stats" type="b">
+      <default>false</default>
+      <summary>Log debug statistics (hidden, not in prefs)</summary>
+    </key>
+  </schema>
+</schemalist>

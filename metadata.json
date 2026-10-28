@@ -1,0 +1,9 @@
+{
+  "uuid": "better-workspace-thumbnails@idogr",
+  "name": "Better Workspace Thumbnails",
+  "description": "Improves the workspace thumbnails at the top of the Activities overview: makes them larger (set in the preferences), shows each workspace's name under its thumbnail, and lets you reorder workspaces by dragging the grip on a thumbnail's top edge. Names come from GNOME's own workspace-names setting, so it works with Space Bar.",
+  "url": "https://github.com/idogrf/better-workspace-thumbnails",
+  "shell-version": ["50"],
+  "settings-schema": "org.gnome.shell.extensions.better-workspace-thumbnails",
+  "version": 1
+}

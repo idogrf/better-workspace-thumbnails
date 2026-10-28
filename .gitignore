@@ -1,0 +1,7 @@
+# build output — regenerate with: glib-compile-schemas schemas/
+schemas/gschemas.compiled
+# headless test runs
+tools/headless/runs/
+__pycache__/
+# release zip — build with: ./pack.sh
+dist/
