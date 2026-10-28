@@ -5,6 +5,8 @@ Activities overview. It makes them larger, shows each workspace's name under
 its thumbnail, and lets you reorder workspaces by dragging a grip on a
 thumbnail's top edge.
 
+![The Activities overview with larger, named workspace thumbnails](docs/images/overview.png)
+
 ## Why this exists
 
 GNOME's thumbnails are small (5% of the screen) and unlabeled, so with several
@@ -38,6 +40,16 @@ way to change the order of workspaces, even though Mutter supports it
 GNOME's own behavior is kept: the accent-colored outline on the current
 workspace, clicking a thumbnail to switch, and dragging windows onto
 thumbnails.
+
+Reordering: the "Clocks" workspace is dragged by its grip to the front, and
+the other thumbnails slide over to open a gap for it. Space Bar is running, so
+the names move with their workspaces.
+
+![Dragging a thumbnail's grip to move its workspace to the front](docs/images/reorder.webp)
+
+Thumbnail size at 1x (GNOME's own), 2x (the default) and 3x:
+
+![The same four thumbnails at 1x, 2x and 3x](docs/images/sizes.png)
 
 ## How it works
 
